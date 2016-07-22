@@ -1,0 +1,269 @@
+%
+% NOTE -- ONLY EDIT LncDM.Rnw!!!
+% LncDM.tex file will get overwritten.
+%
+%\VignetteIndexEntry{LncDM Overview}
+%\VignetteKeywords{lncRNA}
+%\VignettePackage{LncDM}
+
+\documentclass[10pt]{article}
+
+\usepackage{hyperref}
+%\usepackage[pdftex]{graphicx}
+%\SweaveOpts{keep.source=TRUE,eps=FALSE,pdf=TRUE,prefix=FALSE} 
+\author{Hui Zhi}
+
+\textwidth=6.2in
+\textheight=8.5in
+%\parskip=.3cm
+\oddsidemargin=.1in
+\evensidemargin=.1in
+\headheight=-.3in
+
+\newcommand{\xiaowuhao}{\fontsize{9pt}{\baselineskip}\selectfont}
+\newcommand{\liuhao}{\fontsize{7.875pt}{\baselineskip}\selectfont}
+\newcommand{\qihao}{\fontsize{5.25pt}{\baselineskip}\selectfont}
+
+\newcommand\Rpackage[1]{{\textsf{#1}\index{#1 (package)}}}
+\newcommand\RpackageNoindex[1]{{\textsf{#1}}}
+\newcommand\Rclass[1]{{\textit{#1}\index{#1 (class)}}}
+\newcommand\Rfunction[1]{{{\small\texttt{#1}}\index{#1 (function)}}}
+\newcommand\Rmethod[1]{{\small\texttt{#1}}}
+\newcommand\Rcommand[1]{{{\small\texttt{#1}}\index{#1 (function)}}}
+\newcommand\Rfunarg[1]{{\small\texttt{#1}}}
+\newcommand\Robject[1]{{\small\texttt{#1}}}
+\bibliographystyle{plainnat}
+
+\begin{document}
+\setkeys{Gin}{width=1.0\textwidth}
+\title{How To Use LncDM}
+\maketitle
+\tableofcontents
+
+\section{Overview}
+The Illumina Infinium HumanMethylation450 BeadChip (450k) is a cost-effective array and cover over 450,000 CpG sites within human genome. \Rpackage{LncDM} is a package that based on reannotation method to use Illumina HumanMethylation450 BeadChip and Gencode's transcript information to get lncRNAs methylation value. This vignette demonstrates how to easily use the \Rpackage{LncDM} package. The package can get the methylation matrix and identify the differential methylation sites, elements or the regions who are in the elements of lncRNA etc. The annotation file of Illumina Infinium HumanMethylation450 BeadChip is from GEO and the annotation file of human transcripts is from GENCODE. LncDM gets a matrix of methylation values of the samples (see the section \ref{getMatrix}) and the phenotype of samples (see the section \ref{getPheno}). Then it can calculate the methylation values of elements (see the section \ref{regionMethy}). This package uses linear and t test to identify the differential methylation or the sites, elements and regions that related with the phenotype (see the section \ref{DM}). 
+<<echo=FALSE>>=
+library(LncDM)
+@ 
+
+
+\section{Load and preprocessed raw data}
+This section introduces how to prepare DNA methylation data and preprocessed the methylation signal intensity files.
+
+\subsection{preparing methylation sample files}\label{getMatrix}
+ 
+In order to get the different methylation pattern, the user need to prepare methylation signal or beta value files under one directory. Methylation signal files include 4 columns, orderly, there are CpGID, Methylated Intensity, Unmethylated Intensity and Detection P value. Beta value files have 2 columns including CpGID and beta value.
+
+<<>>=
+##the directory of 450k methylation data
+Dir <- system.file("extdata/localdata/Level_2",package="LncDM")
+setwd(Dir)
+files <- list.files(Dir)
+files
+this.sample <- read.table(files[1],sep="\t",header=F);
+head(this.sample)
+@
+
+\subsection{preparing sample phenotype file}\label{getPheno}
+ 
+User should provide each sample's phenotype. 
+
+<<>>=
+##the directory of phenotype file
+Dir <- system.file("extdata/localdata",package="LncDM")
+setwd(Dir)
+##phenotype file
+files <- list.files(Dir)
+files
+pheno <- read.table(files[1],sep="\t",header=T);
+head(pheno)
+@
+
+\subsection{preprocessed raw data}\label{preSection}
+ 
+The function \Rfunction{loaddata} will return beta value of CpG sites and the annotation information for lincRNA, processed transcript, protein coding gene and pseudogene. In this section users can control results by some arguments: \Robject{XYchrom}, \Robject{sitefilter}, \Robject{sitefilterperc}, \Robject{snpfilter} is designed to filter CpG sites; \Robject{samplefilter}, \Robject{samplefilterperc} is designed to filter unqualified samples; \Robject{normalization} decide whether to normalize the different chips using quantile normalization; \Robject{transfm} decide whether to transform beta value; \Robject{imputation} is designed to fill the NA. This function also provide genomewide methylation value's visualization(see figure \ref{density-plot1},\ref{density-plot2},\ref{density-plot3},\ref{detect-pvalue},\ref{heatmap-of-CpG-sites1} and \ref{heatmap-of-CpG-sites2}).
+
+<<>>=
+##the directory of phenotype and 450k methylation's sample data
+Dir <- system.file("extdata/localdata",package="LncDM")
+setwd(Dir)
+##name of phenotype file
+groupfile <- "BRCA_pheno.txt"
+@
+\begin{Schunk}
+\begin{Sinput}
+>loadData <- loaddata(fileDir="Level_2",is_beta=FALSE,beta_method="M/(M+U)",
+groupfile=groupfile,samplefilter = TRUE,contin="OFF",samplefilterperc = 0.75,
+XYchrom = c(FALSE, "X","Y"),sitefilter = TRUE, sitefilterperc = 0.75,
+filterDecetP=0.05,normalization  = FALSE,transfm = FALSE,snpfilter=c(FALSE,"prob_snp"),
+gcase="case",gcontrol="control",skip=2,imputation="knn",knn.k=10)
+>save(loadData,file="loadData.Rdata")
+\end{Sinput}
+\end{Schunk}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{density-plot1}
+\caption{density plot of case vs control after preprocessing}
+\label{density-plot1}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{density-plot2}
+\caption{box plot of case vs control after preprocessing}
+\label{density-plot2}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{density-plot3}
+\caption{densityBean plot of case vs control after preprocessing}
+\label{density-plot3}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{detect-pvalue}
+\caption{samples detect pvalue's distribution}
+\label{detect-pvalue}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{heatmap-of-CpG-sites1}
+\caption{heat map of all CpG sites}
+\label{heatmap-of-CpG-sites1}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=80mm]{heatmap-of-CpG-sites2}
+\caption{heat map of all kinds of transcript (lincRNA, processed transcript, protein coding, pseudogene) CpG sites}
+\label{heatmap-of-CpG-sites2}
+\end{figure}
+
+\section{Methylation value of gene function element}\label{regionMethy}
+
+The function \Rfunction{regionLevel} will return beta value of gene, lincRNA, processed-transcript and pseudogenes' elements. Elements include TSS1500, TSS200, intron, genebody, 1 exon, 5'UTR and 3'UTR ( non coding transcript do not have 5'UTR and 3'UTR ). If the element has only one CpG site, it's beta value is the element's methylation value; otherwise user can chose mean or median method to caculate methylation value. This section also provide transcript element's visualization that consist statistic for transcripts and CpG sites and beta value distribution ( see figure \ref{lincRNARegion1} and \ref{lincRNARegion2} ).
+
+<<>>=
+dir <- system.file("extdata/localdata",package="LncDM")
+##load the result of loaddata()
+load(paste(dir,"/loadData.Rdata",sep=""))
+Region <- regionLevel(data=loadData,indexmethod = "mean",classes="lincRNA")
+@
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{lincRNARegion1}
+\caption{transctipt and CpG site statistic for each element}
+\label{lincRNARegion1}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{lincRNARegion2}
+\caption{case vs control's beta value distribution for each element}
+\label{lincRNARegion2}
+\end{figure}
+
+\section{Different methylation pattern}\label{DM}
+
+LncDM can identify different methylation site (dms), different methylation region (dmr) and different methylation element (dme) in specific disease. The dmr is the longest region which methylation state is all up-regulation or down-regulation. For each specific site or region, wilcox, limma, satterthwaite or t test is used for uncontinuous phenotype, if the phenotype is continuous linear regression will be used. 
+
+\subsection{different methylation site}\label{DMS}
+ 
+The function \Rfunction{dms} can return both of dms and dms's beta value data. This section also provide visualization for dms ( see figure \ref{Manhattan}, \ref{heatmap-of-DMS}, \ref{dms-boxplot} ).
+
+<<>>=
+dir.create(paste(Dir,"/dms",sep=""))
+setwd(paste(Dir,"/dms",sep=""))
+dms <- dms(data=loadData,contin="OFF",classes="lincRNA",testmethod = "t.test", Padj = "fdr",
+gcase = "case", gcontrol = "control", paired = FALSE,rawpcut = 0.05, adjustpcut = 0.05, 
+betadiffcut = 0.3,XY=c(FALSE,"X","Y"),tlog=FALSE,num=1)
+head(dms)
+@
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{Manhattan}
+\caption{manhattan plot of genomewide different methylation analysis result}
+\label{Manhattan}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{heatmap-of-DMS}
+\caption{heat map of different methylation site}
+\label{heatmap-of-DMS}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{dms-boxplot}
+\caption{box plot of the most different methylation site}
+\label{dms-boxplot}
+\end{figure}
+
+\subsection{different methylation element}\label{DME}
+ 
+The function \Rfunction{dme} can return both of dme and dme's beta value data. This section also provide visualization for dme ( see figure \ref{lincRNA_plot1}, \ref{lincRNA_plot2} ).
+
+<<>>=
+dir.create(paste(Dir,"/dme",sep=""))
+setwd(paste(Dir,"/dme",sep=""))
+dme <- dme(data=Region,classes="lincRNA",contin="OFF",testmethod = "t.test", Padj = "fdr",
+gcase = "case", gcontrol = "control", paired = FALSE,rawpcut = 0.05, adjustpcut = 0.05,
+betadiffcut = 0.3,num=1)
+@
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{lincRNA_plot1}
+\caption{box plot of the most different methylation element}
+\label{lincRNA_plot1}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{lincRNA_plot2}
+\caption{heat map of LincRNA intron region}
+\label{lincRNA_plot2}
+\end{figure}
+
+\subsection{different methylation region}\label{DMR}
+ 
+The function \Rfunction{dmr} can return both of dmr and dmr's beta value data. This section also provide visualization for dmr ( see figure \ref{dmr-boxplot}, \ref{heatmap-of-DMR} ).
+
+<<>>=
+dir.create(paste(Dir,"/dmr",sep=""))
+setwd(paste(Dir,"/dmr",sep=""))
+dmr <- dmr(data=loadData,contin="OFF",classes="lincRNA",testmethod = "t.test", Padj = "fdr",
+gcase = "case", gcontrol = "control", paired = FALSE,rawpcut = 0.05, adjustpcut = 0.05,
+betadiffcut = 0.3,num=1,sole=FALSE)
+@
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{dmr-boxplot}
+\caption{box plot of the most different methylation region}
+\label{dmr-boxplot}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=60mm]{heatmap-of-DMR}
+\caption{heat map of different methylation region}
+\label{heatmap-of-DMR}
+\end{figure}
+
+
+\newpage
+\section{Session Info}
+The script runs within the following session:
+<<sessionInfo, echo=FALSE, results=verbatim>>=
+sessionInfo()
+@
+
+\end{document}

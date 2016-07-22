@@ -1,0 +1,15 @@
+Package: LncDM
+Type: Package
+Title: The Different Methylation Sites, Elements and Regions of lncRNA
+Version: 1.0
+Date: 2016-06-21
+Author: Hui Zhi,Yanxun Su,Xin Li 
+Maintainer: Hui Zhi<zhihui013201@gmail.com> 
+Description: The package can get the methylation matrix and identify the differential methylation sites,elements or the regions who are in the elements of lncRNA etc. This package gets a matrix of methylation values of the samples. Then it can calculate the methylation values of elements. This package uses linear and t test to identify the differential methylation or the sites,elements and regions that related with the phenotype.
+Collate: loaddata.R dms.R regionLevel.R dme.R dmr.R
+License: GPL-2
+Depends: R (>= 3.0.1), methods
+Imports: beanplot, reshape, gplots, WriteXLS, MASS, impute, limma, preprocessCore, grDevices, graphics, stats, utils
+LazyLoad: yes
+biocViews: Statistics, Methylation, DMR, LncRNA
+Packaged: 2016-05-16 05:30:54 UTC; Li

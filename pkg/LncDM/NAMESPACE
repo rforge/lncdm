@@ -1,0 +1,27 @@
+import(beanplot)
+import(reshape)
+import(gplots)
+import(WriteXLS)
+import(MASS)
+import(limma)
+import(impute)
+
+importFrom(preprocessCore, normalize.quantiles)
+
+importFrom(grDevices, dev.off, pdf, rainbow, rgb)
+
+importFrom(graphics, abline, axis, barplot, boxplot,
+             legend, lines, par, plot, points, stripchart, mtext, text)
+
+importFrom(methods, new, representation, setClass, slotNames)
+
+importFrom(stats, C, density, fitted, lm, mad, 
+             model.matrix, p.adjust, t.test, wilcox.test)
+
+importFrom(utils, read.delim, read.table, write.table)			 
+
+exportClasses(mhtObject,LincMethy450,RegionMethy450)
+			 
+export(loaddata,dms,regionLevel,dmr,dme)
+
+
